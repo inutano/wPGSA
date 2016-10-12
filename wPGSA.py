@@ -32,8 +32,17 @@ def read_logFC(logFC_file):
 		exp_value[tp] = {}
 		for gene_symbol in gene_symbols:
 			try:
-				if not math.isnan(df.ix[gene_symbol,tp]) and not math.isinf(df.ix[gene_symbol,tp]):
-					exp_value[tp][gene_symbol] = float(df.ix[gene_symbol,tp])
+				logfc_value = df.ix[gene_symbol,tp]
+				# remove NA
+				if not math.isnan(logfc_value):
+					# convert Inf/-Inf to 10/-10
+					if math.isinf(logfc_value):
+						if logfc_value > 0:
+							exp_value[tp][gene_symbol] = float(10)
+						else:
+							exp_value[tp][gene_symbol] = float(-10)
+					else:
+						exp_value[tp][gene_symbol] = float(logfc_value)
 			except TypeError:
 				pass
 			except ValueError:
@@ -165,20 +174,20 @@ def write_result(result,TF_list,tp_list,experiment,output):
 					fo.write('\n')
 
 def start():
-    argparser = argparse.ArgumentParser(description='Estimates relative activities of transcriptional regulators from given transcriptome data.')
-    argparser.add_argument('--network-file', nargs=1, dest='network_file', metavar='network_file', help='network file used as a reference, shared in /network directory')
-    argparser.add_argument('--logfc-file', nargs=1, dest='logfc_file', metavar='logFC_file', help='gene expression data file with the values in the Log2 fold-change, example in /sample_logFC_file')
+	argparser = argparse.ArgumentParser(description='Estimates relative activities of transcriptional regulators from given transcriptome data.')
+	argparser.add_argument('--network-file', nargs=1, dest='network_file', metavar='network_file', help='network file used as a reference, shared in /network directory')
+	argparser.add_argument('--logfc-file', nargs=1, dest='logfc_file', metavar='logFC_file', help='gene expression data file with the values in the Log2 fold-change, example in /sample_logFC_file')
 
-    args = argparser.parse_args()
-    logFC_file = args.logfc_file[0]
-    network_file = args.network_file[0]
+	args = argparser.parse_args()
+	logFC_file = args.logfc_file[0]
+	network_file = args.network_file[0]
 
-    exp_value, tp_list = read_logFC(logFC_file)
-    positive, experiment = read_network(network_file)
-    result,TF_list = wPGSA(tp_list,exp_value,positive,experiment)
+	exp_value, tp_list = read_logFC(logFC_file)
+	positive, experiment = read_network(network_file)
+	result,TF_list = wPGSA(tp_list,exp_value,positive,experiment)
 
-    output = logFC_file.replace('.txt','')
-    write_result(result,TF_list,tp_list,experiment,output)
+	output = logFC_file.replace('.txt','')
+	write_result(result,TF_list,tp_list,experiment,output)
 
 if __name__ == "__main__":
 	try:
